@@ -3,7 +3,7 @@ engine.py - Tabulation, Monthly Ranking Matrix, and Cumulative Composite Scorer
 """
 
 import os
-from typing import Dict, List, Tuple
+from typing import Dict
 import pandas as pd
 from src.metrics import (
     compute_dual_crps,
@@ -23,10 +23,6 @@ MODELS = [
 
 
 def load_actuals(actuals_path: str = "data/actuals.csv", include_in_progress: bool = False) -> pd.DataFrame:
-    """
-    Loads actuals and filters for evaluated months.
-    Defaults to evaluating only CLOSED months.
-    """
     if not os.path.exists(actuals_path):
         raise FileNotFoundError(f"Missing actuals file: {actuals_path}")
 
@@ -39,22 +35,7 @@ def load_actuals(actuals_path: str = "data/actuals.csv", include_in_progress: bo
     return df.sort_values("Month").reset_index(drop=True)
 
 
-def load_macro_friction(friction_path: str = "data/macro_friction.csv") -> pd.DataFrame:
-    """
-    Loads the qualitative macro friction ledger.
-    """
-    if not os.path.exists(friction_path):
-        return pd.DataFrame(columns=["Month", "Regime", "Macro_Headwind_Tailwind", "Geopolitical_Shock"])
-    
-    df = pd.read_csv(friction_path)
-    df["Month"] = df["Month"].astype(str)
-    return df
-
-
 def load_model_forecasts(models_dir: str = "models/") -> Dict[str, pd.DataFrame]:
-    """
-    Loads all model forecast CSVs from the models/ directory.
-    """
     forecasts = {}
     for model in MODELS:
         file_path = os.path.join(models_dir, f"{model}.csv")
@@ -71,12 +52,8 @@ def load_model_forecasts(models_dir: str = "models/") -> Dict[str, pd.DataFrame]
 def score_models_across_months(
     actuals_df: pd.DataFrame,
     forecasts: Dict[str, pd.DataFrame],
-    base_anchor_s0: float = 69000.0,
+    base_anchor_s0: float = 76619.87,
 ) -> pd.DataFrame:
-    """
-    Scores each model for every month available in actuals_df.
-    Computes CRPS, ECP, SMAD, and Composite Score.
-    """
     records = []
 
     for _, actual_row in actuals_df.iterrows():
@@ -113,28 +90,21 @@ def score_models_across_months(
                 "High_p50": float(f_row["High_p50"]),
             })
 
-    df_scores = pd.DataFrame(records)
-    return df_scores
+    return pd.DataFrame(records)
 
 
 def compute_monthly_ranks(df_scores: pd.DataFrame) -> pd.DataFrame:
-    """
-    Ranks models per month (1 = Best / Lowest Composite Score).
-    Resolves ties deterministically by alphabetizing.
-    """
-    df_ranks = df_scores.copy()
-    df_ranks["Rank"] = (
-        df_ranks.groupby("Month")["Composite_Score"]
-        .rank(method="min", ascending=True)
+    """Ranks models per month with deterministic tie-breaking sorted by Composite Score and Model name."""
+    df = df_scores.sort_values(["Month", "Composite_Score", "Model"]).copy()
+    df["Rank"] = (
+        df.groupby("Month")["Composite_Score"]
+        .rank(method="first", ascending=True)
         .astype(int)
     )
-    return df_ranks
+    return df
 
 
 def compute_cumulative_leaderboard(df_scores: pd.DataFrame) -> pd.DataFrame:
-    """
-    Aggregates composite metrics across all closed evaluated months.
-    """
     grouped = df_scores.groupby("Model").agg(
         Mean_Composite=("Composite_Score", "mean"),
         Mean_CRPS=("CRPS_Total", "mean"),
@@ -143,6 +113,6 @@ def compute_cumulative_leaderboard(df_scores: pd.DataFrame) -> pd.DataFrame:
         Months_Evaluated=("Month", "count"),
     ).reset_index()
 
+    grouped = grouped.sort_values(["Mean_Composite", "Model"]).reset_index(drop=True)
     grouped["Final_Rank"] = grouped["Mean_Composite"].rank(method="min", ascending=True).astype(int)
-    return grouped.sort_values("Final_Rank").reset_index(drop=True)
-    
+    return grouped
