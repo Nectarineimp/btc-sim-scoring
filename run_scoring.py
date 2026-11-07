@@ -6,7 +6,6 @@ run_scoring.py - Main Entrypoint for btc-sim-scoring Pipeline
 import sys
 from src.engine import (
     load_actuals,
-    load_macro_friction,
     load_model_forecasts,
     score_models_across_months,
     compute_monthly_ranks,
