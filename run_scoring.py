@@ -22,7 +22,6 @@ def main():
 
     # 1. Load data assets
     actuals = load_actuals("data/actuals.csv", include_in_progress=False)
-    macro_friction = load_macro_friction("data/macro_friction.csv")
     forecasts = load_model_forecasts("models/")
 
     # 2. Compute metrics and rankings
