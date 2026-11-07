@@ -30,10 +30,10 @@ def main():
     leaderboard = compute_cumulative_leaderboard(scores)
 
     # 3. Render visual bump chart
-    render_ranking_bump_chart(ranks, macro_friction, "output/monthly_rankings.png")
+    render_ranking_bump_chart(ranks, leaderboard, "output/monthly_rankings.png")
 
     # 4. Generate markdown audit deliverable
-    generate_markdown_report(scores, ranks, macro_friction, leaderboard, "output/performance_audit.md")
+    generate_markdown_report(scores, ranks, leaderboard, "output/performance_audit.md")
 
     print("Scoring run completed successfully.")
 

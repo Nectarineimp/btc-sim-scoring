@@ -22,7 +22,7 @@ def generate_inference_narrative(model: str, m_scores: pd.DataFrame, lb_row: pd.
         )
     elif model == "gatekeeper":
         return (
-            "Achieved top-tier probabilistic calibration (lowest CRPS and 10.21% SMAD) by successfully gating "
+            f"Achieved top-tier probabilistic calibration (lowest CRPS and {mean_smad:.2f}% SMAD) by successfully gating "
             "volatility against institutional rebalancing windows, though early boundary penalties during May absorption "
             f"kept coverage penalties at {int(total_ecp)} points."
         )
@@ -56,7 +56,6 @@ def generate_inference_narrative(model: str, m_scores: pd.DataFrame, lb_row: pd.
 def generate_markdown_report(
     df_scores: pd.DataFrame,
     df_ranks: pd.DataFrame,
-    df_macro: pd.DataFrame,
     leaderboard: pd.DataFrame,
     output_path: str = "output/performance_audit.md",
 ):
